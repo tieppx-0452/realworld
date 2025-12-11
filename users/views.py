@@ -1,13 +1,18 @@
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.parsers import JSONParser
 from users.models import User
 from users.serializers import UserSerializer
+from rest_framework import generics
+from realworld.views import BaseResponse
 
-def user_list(request):
-    """
-    List all users, or create a new user.
-    """
-    users = User.objects.all()
-    serializer = UserSerializer(users, many=True)
-    return JsonResponse(serializer.data, safe=False)
+class UserList(generics.ListCreateAPIView):
+    def get(self, request):
+        queryset = User.objects.all()
+        serializer = UserSerializer(queryset, many=True)
+        response = BaseResponse(serializer.data, code=200)
+        return response.get_response()
+
+class UserDetail(generics.RetrieveUpdateDestroyAPIView):
+    def get(self, request, id):
+        user = User.objects.get(id=id)
+        serializer = UserSerializer(user)
+        response = BaseResponse(serializer.data, code=200)
+        return response.get_response()
