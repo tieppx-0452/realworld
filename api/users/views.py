@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from .models import User
+from .models import User, Following
 from .serializers import UserSerializer, AuthenticationSerializer
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -56,3 +56,47 @@ class Profile(generics.RetrieveAPIView):
             })
         serializer = UserSerializer(user)
         return Response(serializer.data)
+
+class FollowingUser(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, username):
+        following_user = User.objects.filter(username=username).first()
+        if not following_user:
+            return Response({
+                "message": "User not found."
+            })
+        following_exists = Following.objects.filter(
+            follower_id=request.user.id,
+            following_id=following_user.id
+        ).first()
+        if following_exists:
+            return Response({
+                "message": f"You are already following {username}."
+            })
+        Following.objects.create(
+            follower_id=request.user.id,
+            following_id=following_user.id
+        )
+        return Response({
+            "message": f"You are now following {username}."
+        })
+
+    def delete(self, request, username):
+        unfollow_user = User.objects.filter(username=username).first()
+        if not unfollow_user:
+            return Response({
+                "message": "User not found."
+            })
+        unfollow_exists = Following.objects.filter(
+            follower_id=request.user.id,
+            following_id=unfollow_user.id
+        ).first()
+        if not unfollow_exists:
+            return Response({
+                "message": f"You are not following {username}."
+            })
+        unfollow_exists.delete()
+        return Response({
+            "message": f"You have unfollowed {username}."
+        })
