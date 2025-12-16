@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'api.users',
 ]
 
@@ -119,3 +120,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 APPEND_SLASH = False
+
+# Custom User Model
+AUTH_USER_MODEL = 'users.User'
