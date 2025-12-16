@@ -7,14 +7,14 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "id",
-            "username",
-            "email",
-            "password",
-            "bio",
-            "image",
-            "createdAt",
-            "updatedAt",
+            'id',
+            'username',
+            'email',
+            'password',
+            'bio',
+            'image',
+            'createdAt',
+            'updatedAt',
         ]
 
 class AuthenticationSerializer(serializers.ModelSerializer):
@@ -24,6 +24,6 @@ class AuthenticationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "username",
-            "password",
+            'username',
+            'password',
         ]
