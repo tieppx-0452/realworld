@@ -23,3 +23,48 @@ class ArticleListCreate(generics.ListCreateAPIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors)
+
+class ArticleRetrieve(generics.RetrieveAPIView):
+    def get(self, request, slug):
+        article = Article.objects.filter(slug=slug).first()
+        if not article:
+            return Response({
+                "message": "Article not found."
+            })
+        serializer = ArticleSerializer(article)
+        return Response(serializer.data)
+
+    @permission_classes([IsAuthenticated])
+    def put(self, request, slug):
+        article = Article.objects.filter(slug=slug).first()
+        if not article:
+            return Response({
+                "message": "Article not found."
+            })
+        if article.author.id != request.user.id:
+            return Response({
+                "message": "You do not have permission to delete this article."
+            })
+        data = request.data.copy()
+        data['slug'] = f"{request.data['title'].strip().lower().replace(' ', '-')}-{int(now().timestamp())}"
+        serializer = ArticleSerializer(article, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors)
+
+    @permission_classes([IsAuthenticated])
+    def delete(self, request, slug):
+        article = Article.objects.filter(slug=slug).first()
+        if not article:
+            return Response({
+                "message": "Article not found."
+            })
+        if article.author.id != request.user.id:
+            return Response({
+                "message": "You do not have permission to delete this article."
+            })
+        article.delete()
+        return Response({
+            "message": "Article deleted successfully."
+        })
