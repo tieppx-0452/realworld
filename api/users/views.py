@@ -66,6 +66,10 @@ class FollowingUser(generics.GenericAPIView):
             return Response({
                 "message": "User not found."
             })
+        if following_user.id == request.user.id:
+            return Response({
+                "message": "You cannot follow yourself."
+            })
         following_exists = Following.objects.filter(
             follower_id=request.user.id,
             following_id=following_user.id
