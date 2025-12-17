@@ -17,3 +17,22 @@ class Article(models.Model):
     class Meta:
         db_table = 'articles'
         ordering = ['-id']
+
+class Comment(models.Model):
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    author = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    body = models.TextField(null=False)
+    createdAt = models.DateTimeField(auto_now_add=True)
+    updatedAt = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'comments'
+        ordering = ['-id']

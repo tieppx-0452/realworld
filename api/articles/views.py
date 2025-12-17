@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import generics
 from rest_framework.response import Response
 from .models import Article
-from .serializers import ArticleSerializer
+from .serializers import ArticleSerializer, CommentSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django.utils.timezone import now
@@ -68,3 +68,30 @@ class ArticleRetrieve(generics.RetrieveAPIView):
         return Response({
             "message": "Article deleted successfully."
         })
+
+class CommentListCreate(generics.ListCreateAPIView):
+    def get(self, request, slug):
+        article = Article.objects.filter(slug=slug).first()
+        if not article:
+            return Response({
+                "message": "Article not found."
+            })
+        comments = article.comments.all().order_by("-id")
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data)
+
+    @permission_classes([IsAuthenticated])
+    def post(self, request, slug):
+        article = Article.objects.filter(slug=slug).first()
+        if not article:
+            return Response({
+                "message": "Article not found."
+            })
+        data = request.data.copy()
+        data['author'] = request.user.id
+        data['article'] = article.id
+        serializer = CommentSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors)
