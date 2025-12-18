@@ -13,3 +13,21 @@ class User(AbstractUser):
     class Meta:
         db_table = 'users'
         ordering = ['-id']
+
+class Following(models.Model):
+    follower = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='followings'
+    )
+    following = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='followers'
+    )
+    createdAt = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'followings'
+        unique_together = ('follower_id', 'following_id')
+        ordering = ['-createdAt']
