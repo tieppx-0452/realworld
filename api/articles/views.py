@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework import generics
 from rest_framework.response import Response
-from .models import Article
-from .serializers import ArticleSerializer, CommentSerializer
+from .models import Article, Comment
+from .serializers import ArticleSerializer, CommentGetSerializer, CommentPostSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django.utils.timezone import now
@@ -77,7 +77,7 @@ class CommentListCreate(generics.ListCreateAPIView):
                 "message": "Article not found."
             })
         comments = article.comments.all().order_by("-id")
-        serializer = CommentSerializer(comments, many=True)
+        serializer = CommentGetSerializer(comments, many=True)
         return Response(serializer.data)
 
     @permission_classes([IsAuthenticated])
@@ -88,10 +88,14 @@ class CommentListCreate(generics.ListCreateAPIView):
                 "message": "Article not found."
             })
         data = request.data.copy()
-        data['author'] = request.user.id
-        data['article'] = article.id
-        serializer = CommentSerializer(data=data)
+        data['author'] = request.user
+        data['article'] = article
+        serializer = CommentPostSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            Comment.objects.create(
+                article=article,
+                author=request.user,
+                body=serializer.validated_data['body']
+            )
             return Response(serializer.data)
         return Response(serializer.errors)
