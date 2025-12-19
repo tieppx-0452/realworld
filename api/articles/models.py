@@ -1,8 +1,11 @@
 from django.db import models
+from core.models import CoreModel
 
-class Article(models.Model):
-    title = models.CharField(max_length=255, null=False)
-    slug = models.SlugField(unique=True, max_length=255, null=True)
+import core.constants as constants
+
+class Article(CoreModel):
+    title = models.CharField(max_length=constants.MAX_LENGTH, null=False)
+    slug = models.SlugField(unique=True, max_length=constants.MAX_LENGTH, null=True)
     description = models.TextField(null=False)
     body = models.TextField(null=False)
     isPublished = models.BooleanField(default=False)
@@ -11,14 +14,12 @@ class Article(models.Model):
         on_delete=models.CASCADE,
         related_name='articles'
     )
-    createdAt = models.DateTimeField(auto_now_add=True)
-    updatedAt = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'articles'
         ordering = ['-id']
 
-class Comment(models.Model):
+class Comment(CoreModel):
     article = models.ForeignKey(
         Article,
         on_delete=models.CASCADE,
@@ -30,8 +31,6 @@ class Comment(models.Model):
         related_name='comments'
     )
     body = models.TextField(null=False)
-    createdAt = models.DateTimeField(auto_now_add=True)
-    updatedAt = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'comments'

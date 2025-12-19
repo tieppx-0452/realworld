@@ -3,9 +3,8 @@ from rest_framework import generics
 from rest_framework.response import Response
 from .models import Article, Comment
 from .serializers import ArticleSerializer, CommentGetSerializer, CommentPostSerializer
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
-from django.utils.timezone import now
 
 class ArticleListCreate(generics.ListCreateAPIView):
     def get(self, request):
@@ -17,7 +16,7 @@ class ArticleListCreate(generics.ListCreateAPIView):
     def post(self, request):
         data = request.data.copy()
         data['author'] = request.user.id
-        data['slug'] = f"{request.data['title'].strip().lower().replace(' ', '-')}-{int(now().timestamp())}"
+        data['slug'] = ArticleSerializer.generate_slug(data['title'])
         serializer = ArticleSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -46,7 +45,7 @@ class ArticleRetrieve(generics.RetrieveAPIView):
                 "message": "You do not have permission to delete this article."
             })
         data = request.data.copy()
-        data['slug'] = f"{request.data['title'].strip().lower().replace(' ', '-')}-{int(now().timestamp())}"
+        data['slug'] = ArticleSerializer.generate_slug(data['title'])
         serializer = ArticleSerializer(article, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -70,6 +69,11 @@ class ArticleRetrieve(generics.RetrieveAPIView):
         })
 
 class CommentListCreate(generics.ListCreateAPIView):
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
     def get(self, request, slug):
         article = Article.objects.filter(slug=slug).first()
         if not article:
@@ -80,7 +84,6 @@ class CommentListCreate(generics.ListCreateAPIView):
         serializer = CommentGetSerializer(comments, many=True)
         return Response(serializer.data)
 
-    @permission_classes([IsAuthenticated])
     def post(self, request, slug):
         article = Article.objects.filter(slug=slug).first()
         if not article:

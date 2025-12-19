@@ -4,9 +4,14 @@ from rest_framework.serializers import (
     SerializerMethodField,
     CharField,
 )
+from django.utils.timezone import now
 
 class ArticleSerializer(serializers.ModelSerializer):
     comments = serializers
+
+    def generate_slug(title):
+        return f"{title.strip().lower().replace(' ', '-')}-{int(now().timestamp())}"
+
     class Meta:
         model = Article
         fields = [
@@ -44,7 +49,7 @@ class CommentGetSerializer(serializers.ModelSerializer):
         ]
 
 class CommentPostSerializer(serializers.Serializer):
-    body = serializers.CharField(max_length=1000, required=True)
+    body = serializers.CharField(required=True)
 
     class Meta:
         model = Comment
