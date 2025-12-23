@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
 from .models import Article, Comment, Tag, FavoriteArticle
@@ -34,20 +34,12 @@ class ArticleRetrieve(generics.RetrieveAPIView):
         return [AllowAny()]
 
     def get(self, request, slug):
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({
-                "message": "Article not found."
-            })
+        article = get_object_or_404(Article, slug=slug)
         serializer = ArticleSerializer(article)
         return Response(serializer.data)
 
     def put(self, request, slug):
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({
-                "message": "Article not found."
-            })
+        article = get_object_or_404(Article, slug=slug)
         if article.author.id != request.user.id:
             return Response({
                 "message": "You do not have permission to update this article."
@@ -61,11 +53,7 @@ class ArticleRetrieve(generics.RetrieveAPIView):
         return Response(serializer.errors)
 
     def delete(self, request, slug):
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({
-                "message": "Article not found."
-            })
+        article = get_object_or_404(Article, slug=slug)
         if article.author.id != request.user.id:
             return Response({
                 "message": "You do not have permission to delete this article."
@@ -82,21 +70,13 @@ class CommentListCreate(generics.ListCreateAPIView):
         return [AllowAny()]
 
     def get(self, request, slug):
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({
-                "message": "Article not found."
-            })
+        article = get_object_or_404(Article, slug=slug)
         comments = article.comments.all().order_by("-id")
         serializer = CommentGetSerializer(comments, many=True)
         return Response(serializer.data)
 
     def post(self, request, slug):
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({
-                "message": "Article not found."
-            })
+        article = get_object_or_404(Article, slug=slug)
         data = request.data.copy()
         data['author'] = request.user
         data['article'] = article
@@ -112,11 +92,7 @@ class CommentListCreate(generics.ListCreateAPIView):
 
 class CommentRetrieve(generics.RetrieveAPIView):
     def delete(self, request, slug, id):
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({
-                "message": "Article not found."
-            })
+        article = get_object_or_404(Article, slug=slug)
         comment = article.comments.filter(id=id).first()
         if not comment:
             return Response({
@@ -143,15 +119,11 @@ class ArticleFavorite(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, slug):
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({
-                "message": "Article not found."
-            })
+        article = get_object_or_404(Article, slug=slug)
         favorite_exists = FavoriteArticle.objects.filter(
             user=request.user,
             article=article
-        ).first()
+        ).exists()
         if favorite_exists:
             return Response({
                 "message": "Article already favorited."
@@ -165,11 +137,7 @@ class ArticleFavorite(generics.RetrieveAPIView):
         })
 
     def delete(self, request, slug):
-        article = Article.objects.filter(slug=slug).first()
-        if not article:
-            return Response({
-                "message": "Article not found."
-            })
+        article = get_object_or_404(Article, slug=slug)
         favorite_exists = FavoriteArticle.objects.filter(
             user=request.user,
             article=article
