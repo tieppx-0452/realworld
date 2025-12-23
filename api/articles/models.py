@@ -14,6 +14,11 @@ class Article(CoreModel):
         on_delete=models.CASCADE,
         related_name='articles'
     )
+    favorited_by = models.ManyToManyField(
+        'users.User',
+        through='FavoriteArticle',
+        related_name='favorites'
+    )
 
     class Meta:
         db_table = 'articles'
@@ -35,3 +40,44 @@ class Comment(CoreModel):
     class Meta:
         db_table = 'comments'
         ordering = ['-id']
+
+class Tag(CoreModel):
+    name = models.CharField(max_length=constants.MAX_LENGTH, unique=True, null=False)
+
+    class Meta:
+        db_table = 'tags'
+        ordering = ['-id']
+
+class ArticleTag(CoreModel):
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name='article_tags'
+    )
+    tag = models.ForeignKey(
+        Tag,
+        on_delete=models.CASCADE,
+        related_name='article_tags'
+    )
+
+    class Meta:
+        db_table = 'article_tags'
+        unique_together = ('article_id', 'tag_id')
+        ordering = ['-id']
+
+class FavoriteArticle(CoreModel):
+    user = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='favorite_articles'
+    )
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name='favorite_articles'
+    )
+
+    class Meta:
+        db_table = 'favorite_articles'
+        unique_together = ('user_id', 'article_id')
+        ordering = ['-createdAt']
