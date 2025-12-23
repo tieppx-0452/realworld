@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from .models import User, Following
@@ -49,11 +49,7 @@ class AuthUser(generics.RetrieveAPIView):
 
 class Profile(generics.RetrieveAPIView):
     def get(self, request, username):
-        user = User.objects.filter(username=username).first()
-        if not user:
-            return Response({
-                "message": "User not found."
-            })
+        user = get_object_or_404(User, username=username)
         serializer = UserSerializer(user)
         return Response(serializer.data)
 
@@ -61,20 +57,16 @@ class FollowingUser(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, username):
-        following_user = User.objects.filter(username=username).first()
-        if not following_user:
-            return Response({
-                "message": "User not found."
-            })
+        following_user = get_object_or_404(User, username=username)
         if following_user.id == request.user.id:
             return Response({
                 "message": "You cannot follow yourself."
             })
-        following_exists = Following.objects.filter(
+        check_following_exists = Following.objects.filter(
             follower_id=request.user.id,
             following_id=following_user.id
-        ).first()
-        if following_exists:
+        ).exists()
+        if check_following_exists:
             return Response({
                 "message": f"You are already following {username}."
             })
@@ -87,20 +79,16 @@ class FollowingUser(generics.GenericAPIView):
         })
 
     def delete(self, request, username):
-        unfollow_user = User.objects.filter(username=username).first()
-        if not unfollow_user:
-            return Response({
-                "message": "User not found."
-            })
-        unfollow_exists = Following.objects.filter(
+        unfollow_user = get_object_or_404(User, username=username)
+        check_following_exists = Following.objects.filter(
             follower_id=request.user.id,
             following_id=unfollow_user.id
-        ).first()
-        if not unfollow_exists:
+        ).exists()
+        if not check_following_exists:
             return Response({
                 "message": f"You are not following {username}."
             })
-        unfollow_exists.delete()
+        check_following_exists.delete()
         return Response({
             "message": f"You have unfollowed {username}."
         })
