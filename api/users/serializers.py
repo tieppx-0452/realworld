@@ -17,6 +17,16 @@ class UserSerializer(serializers.ModelSerializer):
             'updatedAt',
         ]
 
+class RelatedUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'username',
+            'email',
+            'bio',
+            'image',
+        ]
+
 class AuthenticationSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
