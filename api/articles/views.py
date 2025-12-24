@@ -13,9 +13,26 @@ class ArticleListCreate(generics.ListCreateAPIView):
         return [AllowAny()]
 
     def get(self, request):
-        queryset = Article.objects.all().order_by("-id")
+        tag_query = request.GET.get('tag', None)
+        author_query = request.GET.get('author', None)
+        favorited_by_query = request.GET.get('favorited', None)
+        limit = int(request.GET.get('limit', 15))
+        offset = int(request.GET.get('offset', 0))
+        queryset = Article.objects.all()
+        if tag_query is not None:
+            queryset = queryset.filter(article_tags__tag__name=tag_query)
+        if author_query is not None:
+            queryset = queryset.filter(author__username=author_query)
+        if favorited_by_query is not None:
+            queryset = queryset.filter(favorited_by__username=favorited_by_query)
+        total_count = queryset.count()
+        queryset = queryset.order_by('-id')
+        queryset = queryset[offset:offset + limit]
         serializer = ArticleSerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response({
+            "articles": serializer.data,
+            "articlesCount": total_count
+        })
 
     def post(self, request):
         data = request.data.copy()
@@ -63,6 +80,28 @@ class ArticleRetrieve(generics.RetrieveAPIView):
         article.delete()
         return Response({
             "message": "Article deleted successfully."
+        })
+
+class FeedArticleList(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        limit = int(request.GET.get('limit', 15))
+        offset = int(request.GET.get('offset', 0))
+        following_users = request.user.following.values_list('following_id', flat=True)
+        if not following_users:
+            return Response({
+                "articles": [],
+                "articlesCount": 0
+            })
+        queryset = Article.objects.filter(author_id__in=following_users)
+        total_count = queryset.count()
+        queryset = queryset.order_by('-id')
+        queryset = queryset[offset:offset + limit]
+        serializer = ArticleSerializer(queryset, many=True)
+        return Response({
+            "articles": serializer.data,
+            "articlesCount": total_count
         })
 
 class CommentListCreate(generics.ListCreateAPIView):
