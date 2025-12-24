@@ -55,12 +55,12 @@ class ArticleCreateUpdateSerializer(serializers.ModelSerializer):
         return f"{title.strip().lower().replace(' ', '-')}-{int(now().timestamp())}"
 
     def save_article_tag(article, tag_names):
-        for tag_title in tag_names.split(','):
-            tag, is_created = Tag.objects.get_or_create(name=tag_title.strip())
-            ArticleTag.objects.get_or_create(
-                article=article,
-                tag=tag
-            )
+        if not tag_names:
+            return
+        tag_titles = [tag.strip() for tag in tag_names.split(',') if tag.strip()]
+        for tag_title in tag_titles:
+            tag, _ = Tag.objects.get_or_create(name=tag_title)
+            ArticleTag.objects.get_or_create(article=article, tag=tag)
 
     class Meta:
         model = Article

@@ -24,8 +24,7 @@ class ArticleListCreate(generics.ListCreateAPIView):
         serializer = ArticleCreateUpdateSerializer(data=data)
         if serializer.is_valid():
             article = serializer.save()
-            if 'tagList' in data and data['tagList'].strip() != '':
-                ArticleCreateUpdateSerializer.save_article_tag(article, data['tagList'])
+            ArticleCreateUpdateSerializer.save_article_tag(article, data.get('tagList', ''))
             return Response(serializer.data)
         return Response(serializer.errors)
 
@@ -51,8 +50,7 @@ class ArticleRetrieve(generics.RetrieveAPIView):
         serializer = ArticleSerializer(article, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            if 'tagList' in data and data['tagList'].strip() != '':
-                ArticleCreateUpdateSerializer.save_article_tag(article, data['tagList'])
+            ArticleCreateUpdateSerializer.save_article_tag(article, data.get('tagList', ''))
             return Response(serializer.data)
         return Response(serializer.errors)
 
