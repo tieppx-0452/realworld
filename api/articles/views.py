@@ -1,8 +1,8 @@
 from django.shortcuts import render, get_object_or_404
 from rest_framework import generics
 from rest_framework.response import Response
-from .models import Article, Comment, Tag, FavoriteArticle
-from .serializers import ArticleSerializer, CommentGetSerializer, CommentPostSerializer
+from .models import Article, Comment, Tag, FavoriteArticle, ArticleTag
+from .serializers import ArticleSerializer, ArticleCreateUpdateSerializer, CommentGetSerializer, CommentPostSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
 
@@ -20,10 +20,11 @@ class ArticleListCreate(generics.ListCreateAPIView):
     def post(self, request):
         data = request.data.copy()
         data['author'] = request.user.id
-        data['slug'] = ArticleSerializer.generate_slug(data['title'])
-        serializer = ArticleSerializer(data=data)
+        data['slug'] = ArticleCreateUpdateSerializer.generate_slug(data['title'])
+        serializer = ArticleCreateUpdateSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            article = serializer.save()
+            ArticleCreateUpdateSerializer.save_article_tag(article, data.get('tagList', ''))
             return Response(serializer.data)
         return Response(serializer.errors)
 
@@ -49,6 +50,7 @@ class ArticleRetrieve(generics.RetrieveAPIView):
         serializer = ArticleSerializer(article, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            ArticleCreateUpdateSerializer.save_article_tag(article, data.get('tagList', ''))
             return Response(serializer.data)
         return Response(serializer.errors)
 
