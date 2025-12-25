@@ -10,4 +10,5 @@ urlpatterns = [
 
     path('api/tags', views.TagList.as_view(), name='tag-list'),
     path('api/articles/<str:slug>/favorite', views.ArticleFavorite.as_view(), name='article-favorite'),
+    path('api/articles/feed', views.FeedArticleList.as_view(), name='feed-article-list'),
 ]
