@@ -5,34 +5,25 @@ from .models import Article, Comment, Tag, FavoriteArticle, ArticleTag
 from .serializers import ArticleSerializer, ArticleCreateUpdateSerializer, CommentGetSerializer, CommentPostSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
+from ..pagination import BasePagination
+from .filtering import FilterArticle
 
 class ArticleListCreate(generics.ListCreateAPIView):
+    pagination_class = BasePagination
+    filter_backends = [FilterArticle]
+
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsAuthenticated()]
         return [AllowAny()]
 
     def get(self, request):
-        tag_query = request.GET.get('tag', None)
-        author_query = request.GET.get('author', None)
-        favorited_by_query = request.GET.get('favorited', None)
-        limit = int(request.GET.get('limit', 15))
-        offset = int(request.GET.get('offset', 0))
         queryset = Article.objects.all()
-        if tag_query is not None:
-            queryset = queryset.filter(article_tags__tag__name=tag_query)
-        if author_query is not None:
-            queryset = queryset.filter(author__username=author_query)
-        if favorited_by_query is not None:
-            queryset = queryset.filter(favorited_by__username=favorited_by_query)
-        total_count = queryset.count()
+        queryset = self.filter_queryset(queryset)
         queryset = queryset.order_by('-id')
-        queryset = queryset[offset:offset + limit]
-        serializer = ArticleSerializer(queryset, many=True)
-        return Response({
-            "articles": serializer.data,
-            "articlesCount": total_count
-        })
+        page = self.paginate_queryset(queryset)
+        serializer = ArticleSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
     def post(self, request):
         data = request.data.copy()
@@ -86,8 +77,6 @@ class FeedArticleList(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        limit = int(request.GET.get('limit', 15))
-        offset = int(request.GET.get('offset', 0))
         following_users = request.user.following.values_list('following_id', flat=True)
         if not following_users:
             return Response({
@@ -95,14 +84,10 @@ class FeedArticleList(generics.ListAPIView):
                 "articlesCount": 0
             })
         queryset = Article.objects.filter(author_id__in=following_users)
-        total_count = queryset.count()
         queryset = queryset.order_by('-id')
-        queryset = queryset[offset:offset + limit]
-        serializer = ArticleSerializer(queryset, many=True)
-        return Response({
-            "articles": serializer.data,
-            "articlesCount": total_count
-        })
+        page = self.paginate_queryset(queryset)
+        serializer = ArticleSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
 class CommentListCreate(generics.ListCreateAPIView):
     def get_permissions(self):
