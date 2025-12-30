@@ -5,17 +5,25 @@ from .models import Article, Comment, Tag, FavoriteArticle, ArticleTag
 from .serializers import ArticleSerializer, ArticleCreateUpdateSerializer, CommentGetSerializer, CommentPostSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
+from ..pagination import BasePagination
+from .filtering import FilterArticle
 
 class ArticleListCreate(generics.ListCreateAPIView):
+    pagination_class = BasePagination
+    filter_backends = [FilterArticle]
+
     def get_permissions(self):
         if self.request.method == 'POST':
             return [IsAuthenticated()]
         return [AllowAny()]
 
     def get(self, request):
-        queryset = Article.objects.all().order_by("-id")
-        serializer = ArticleSerializer(queryset, many=True)
-        return Response(serializer.data)
+        queryset = Article.objects.all()
+        queryset = self.filter_queryset(queryset)
+        queryset = queryset.order_by('-id')
+        page = self.paginate_queryset(queryset)
+        serializer = ArticleSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
     def post(self, request):
         data = request.data.copy()
@@ -64,6 +72,22 @@ class ArticleRetrieve(generics.RetrieveAPIView):
         return Response({
             "message": "Article deleted successfully."
         })
+
+class FeedArticleList(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        following_users = request.user.following.values_list('following_id', flat=True)
+        if not following_users:
+            return Response({
+                "articles": [],
+                "articlesCount": 0
+            })
+        queryset = Article.objects.filter(author_id__in=following_users)
+        queryset = queryset.order_by('-id')
+        page = self.paginate_queryset(queryset)
+        serializer = ArticleSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
 class CommentListCreate(generics.ListCreateAPIView):
     def get_permissions(self):
