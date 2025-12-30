@@ -11,4 +11,4 @@ class FilterArticle(filters.BaseFilterBackend):
             queryset = queryset.filter(author__username=author_query)
         if favorited_by_query is not None:
             queryset = queryset.filter(favorited_by__username=favorited_by_query)
-        return queryset
+        return queryset.distinct()
